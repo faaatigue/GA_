@@ -12,6 +12,12 @@
 ### 另外，公式中| · |符号是代表一个集合中元素的个数。 $(u,v)$ 是位置的角坐标。
 
 ## 
+$$\begin{aligned}F_{obj}^2 & =\sum_{(u,v)\in S_L}\left(\frac{\hat E(u,v)-M_L(u,v)}{|S_L|}\right)^2 \\  & +\sum_{(u,v)\in S_U}\left(\frac{\hat E(u,v)-M_U(u,v)}{|S_U|}\right)^2\end{aligned}$$
+
+$$\begin{aligned}S_L&=\Big\{(u,v)\mid\hat{E}(u,v)<M_L(u,v)\Big\}\\S_U&=\Big\{(u,v)\mid\hat{E}(u,v)>M_U(u,v)\Big\}\end{aligned}$$
+
+##
+
 ### 我的代码逻辑（255-298行）:
 ### 先对所有 $(u,v)$ 计算 $M_L(u,v)$ 和 $M_U(u,v)$ ；
 ### 再分别遍历 $M_L(u,v)$ 和 $M_U(u,v)$ ，符合 $S_L$ 和 $S_U$ 条件的，分别计算 $(\hat{E}(u,v)-M_L(u,v))^2$ 和 $(\hat{E}(u,v)-M_U(u,v))^2$ 丢进去列表F_1和F_2。
