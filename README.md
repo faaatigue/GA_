@@ -14,9 +14,9 @@
 ## 
 $$\begin{aligned}F_{obj}^2 & =\sum_{(u,v)\in S_L}\left(\frac{\hat E(u,v)-M_L(u,v)}{|S_L|}\right)^2 \\  & +\sum_{(u,v)\in S_U}\left(\frac{\hat E(u,v)-M_U(u,v)}{|S_U|}\right)^2\end{aligned}$$
 
-$$\begin{aligned}S_L&=\Big\{(u,v)\mid\hat{E}(u,v)<M_L(u,v)\Big\}\\S_U&=\Big\{(u,v)\mid\hat{E}(u,v)>M_U(u,v)\Big\}\end{aligned}$$
+$$\mathcal{E}(u,v;\Theta)=(u-u_0)^2+(v-v_0)^2-\sin^2(\Theta)$$
 
-##
+
 
 ### 我的代码逻辑（255-298行）:
 ### 先对所有 $(u,v)$ 计算 $M_L(u,v)$ 和 $M_U(u,v)$ ；
