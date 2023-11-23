@@ -2,23 +2,15 @@ import numpy as np
 from pymoo.core.problem import ElementwiseProblem
 from numpy import sin, cos, max, pi, exp, sqrt, abs, nanmax
 from matplotlib import pyplot as plt
-from tqdm import tqdm
 import time
-from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.algorithms.moo.unsga3 import UNSGA3
 from pymoo.optimize import minimize
-from pymoo.operators.sampling.rnd import BinaryRandomSampling, FloatRandomSampling
-from pymoo.operators.sampling.lhs import LHS
-from pymoo.operators.selection.tournament import TournamentSelection
-from pymoo.operators.crossover.sbx import SBX
-from pymoo.operators.crossover.binx import BX, BinomialCrossover
-from pymoo.operators.mutation.pm import PolynomialMutation
+from pymoo.operators.sampling.rnd import BinaryRandomSampling
+from pymoo.operators.crossover.pntx import TwoPointCrossover
 from pymoo.operators.mutation.bitflip import BitflipMutation
-from pymoo.operators.mutation.gauss import GM, GaussianMutation
 from pymoo.util.ref_dirs import get_reference_directions
 from pymoo.visualization.scatter import Scatter
-from pymoo.algorithms.soo.nonconvex.ga import GA
-from pymoo.operators.crossover.pntx import TwoPointCrossover
+
 
 
 
@@ -130,11 +122,9 @@ class BinaryMatrixProblem(ElementwiseProblem):
                 Gamma[n, m] = A * exp(1j * matrix[n, m])
                 
                 # The elevation angle from the unit cell to the transmitter
-                theta_t_nm[n, m] = np.arccos(abs(z_t / r_t[n, m]))  
                 theta_tx_nm[n, m] = np.arctan((np.sqrt(((z_t ** 2) * (y_u[n, m] ** 2)) + ((z_t ** 2) * (x_u[n, m] ** 2))) + \
                                                         (y_u[n, m] * (x_t - x_u[n, m]) - x_u[n, m] * (y_t - y_u[n, m])) ** 2) / \
                                                         (r_t[n, m] ** 2 - ((x_u[n, m] * x_t) + (y_u[n, m] * y_t))))
-
 
 
         N_x = N*10
@@ -216,7 +206,7 @@ class BinaryMatrixProblem(ElementwiseProblem):
 
         for p in range(0, len(r_p_vect)):
             for q in range(0, len(r_q_vect)): 
-                if E_L[p, q] > 1:
+                if E_L[p, q] > 0:
                     M_L[p, q] = np.nanmin(values)
                 else:
                     M_L[p, q] = -3
@@ -234,7 +224,7 @@ class BinaryMatrixProblem(ElementwiseProblem):
 
         for p in range(0, len(r_p_vect)):
             for q in range(0, len(r_q_vect)): 
-                if E_U[p, q] > 1:
+                if E_U[p, q] > 0:
                     M_U[p, q] = SLL
                 else:
                     M_U[p, q] = 0
@@ -250,7 +240,6 @@ class BinaryMatrixProblem(ElementwiseProblem):
         fitness = F_obj
         print(fitness)
         out["F"] = fitness
-        # out["F"] = [F_1_sum, F_2_sum]
 
 
 
@@ -259,11 +248,8 @@ n_rows = N
 n_cols = M
 problem = BinaryMatrixProblem(n_rows, n_cols)
 
-# selecttion = TournamentSelection()  
-# sampling = LHS()
+
 sampling = BinaryRandomSampling()
-# crossover = BinomialCrossover(prob=0.9)  
-# mutation = GaussianMutation(prob=0.1)
 crossover=TwoPointCrossover(prob=0.9)
 mutation=BitflipMutation(prob=0.1)
 
@@ -289,7 +275,6 @@ res = minimize(
     save_history=True,
     verbose=True,
     disp=2,
-    # pop_initializer=pop_custom,
 )
 
 
@@ -325,3 +310,132 @@ hours, rem = divmod(execution_time, 3600)
 minutes, seconds = divmod(rem, 60)
 
 print(f"Script execution time: {int(hours)}h {int(minutes)}min {int(seconds)}s")
+
+
+
+# test final plot
+phi_Gamma = best_matrix
+
+
+for n in range(0, N):
+    for m in range(0, M):
+        x_u[n, m] = (m - ((M / 2) - 1 ) - 0.5) * dx
+        y_u[n, m] = (n - ((N / 2) - 1 ) - 0.5) * dy
+
+        # Compute the parameters along the coordinate axes
+        # The distance between the transmitter and the unit cell
+        r_t[n, m] = np.sqrt((x_t - x_u[n, m]) ** 2 + (y_t - y_u[n, m]) ** 2 + z_t ** 2)  
+        # The distance between the receiver and the unit cell
+        r_r[n, m] = np.sqrt((x_r - x_u[n, m]) ** 2 + (y_r - y_u[n, m]) ** 2 + z_r ** 2)
+
+            
+        Gamma[n, m] = A * exp(1j * phi_Gamma[n, m])
+        
+        # The elevation angle from the unit cell to the transmitter
+        theta_t_nm[n, m] = np.arccos(abs(z_t / r_t[n, m]))  
+        theta_tx_nm[n, m] = np.arctan((np.sqrt(((z_t ** 2) * (y_u[n, m] ** 2)) + ((z_t ** 2) * (x_u[n, m] ** 2))) + \
+                                                (y_u[n, m] * (x_t - x_u[n, m]) - x_u[n, m] * (y_t - y_u[n, m])) ** 2) / \
+                                                (r_t[n, m] ** 2 - ((x_u[n, m] * x_t) + (y_u[n, m] * y_t))))
+
+
+
+# print(phi_Gamma)
+plt.figure()
+plt.imshow(phi_Gamma, origin='lower', cmap='viridis')    
+plt.axis('equal') 
+
+# Set integer tick labels for both x and y axes
+plt.xticks(range(0, M, 2))
+plt.yticks(range(0, N, 2))
+plt.colorbar()
+plt.show()
+
+
+
+N_x = N*10
+N_y = M*10
+p_inf, p_sup = -(N_x - 1) / 2, (N_x - 1) / 2
+q_inf, q_sup = -(N_y - 1) / 2, (N_y - 1) / 2
+# p_inf, p_sup = 1, N_x
+# q_inf, q_sup = 1, N_y
+pas_pq = 1
+
+# Generate receiver coordinates
+r_theta_vect = np.linspace(0, pi/2, N_x)
+r_phi_vect = np.linspace(0, 2*pi, N_y)
+
+
+r_p_vect = np.arange(p_inf, p_sup + pas_pq, pas_pq)
+r_q_vect = np.arange(q_inf, q_sup + pas_pq, pas_pq)
+
+
+rmn_rf = np.zeros((N, M))
+s = np.zeros((len(r_p_vect), len(r_q_vect)), dtype = 'complex_')
+P_r1 = np.zeros((len(r_p_vect), len(r_q_vect)), dtype = 'complex_')
+
+
+for n in range(0, N):
+    for m in range(0, M):
+
+        rmn_rf[n, m] = np.sqrt(x_u[n, m] ** 2 + y_u[n, m] ** 2 + d1 ** 2) 
+        # rmn_rf[n, m] = sqrt(((m + 1) * dx) ** 2 + ((n + 1) * dy) ** 2 + d1 ** 2)       
+
+bla_2 = (power_radiation_pattern_t(theta_tx_nm, 0) * \
+         power_radiation_pattern_cell(theta_tx_nm, 0) / rmn_rf) * \
+         Gamma*  exp(-1j * k * rmn_rf) 
+
+
+matrice = np.fft.ifft2(bla_2, (N_x, N_y))
+matrice = np.fft.fftshift(matrice)
+        
+
+u, v = 2 * pi * r_p_vect / (N_x * dx * k), \
+       2 * pi * r_q_vect / (N_y * dy * k)
+
+u_, v_ = np.meshgrid(u,v)
+
+        
+for p in range(0, len(r_p_vect)):
+    for q in range(0, len(r_q_vect)): 
+        
+        s[p, q] = 1 - u_[p, q]**2 - v_[p, q]**2
+
+        # The radiation pattern calculated from GA
+        P_r1[p, q] = sqrt(s[p, q]) * M * N * \
+                     matrice[p, q]
+        
+
+        # if s[p, q] < 0:
+        #     P_r1[p, q] = None
+        #     u_[p, q], v_[p, q] = None, None
+
+
+# Normalize received power
+P_r = P_r1 / nanmax(P_r1)
+# P_r = P_r1
+values = 10 * np.log10(abs(P_r))
+# values = abs(P_r)
+
+for p in range(0, len(r_p_vect)):
+    for q in range(0, len(r_q_vect)): 
+        if values[p, q] < -100:
+            values[p, q] = None
+
+
+
+# Create a rectangular heatmap
+# plt.imshow(abs(matrice), cmap='viridis', origin='upper')
+plt.imshow(values, cmap='jet', origin='lower')
+plt.axis('equal') 
+
+# Add labels and a color bar
+plt.colorbar(label='')
+
+plt.axis('off')
+
+# Add a title
+plt.title('')
+
+# Display the plot
+plt.show()
+
