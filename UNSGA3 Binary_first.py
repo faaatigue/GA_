@@ -200,41 +200,27 @@ class BinaryMatrixProblem(ElementwiseProblem):
 
         # First objective function and Lower mask
         E_L = (u_ - u_0)**2 + (v_ - v_0)**2 - sin(Theta_hp)**2
-
-        M_L = np.zeros((len(r_p_vect), len(r_q_vect)))
-        F_1 = []
+        F_L = []
 
         for p in range(0, len(r_p_vect)):
             for q in range(0, len(r_q_vect)): 
-                if E_L[p, q] > 0:
-                    M_L[p, q] = np.nanmin(values)
-                else:
-                    M_L[p, q] = -3
+                if E_L[p, q] <= 0 and values[p, q] < -3:
+                    F_L.append((values[p, q] - (-3))**2)
 
-                if values[p, q] < M_L[p, q]:
-                    F_1.append((values[p, q] - M_L[p, q])**2)
-
-        F_1_sum = sum(F_1) / len(F_1)**2
+        F_L_sum = sum(F_L) / len(F_L)**2
 
         # Second objective function and Upper mask
         E_U = (u_ - u_0)**2 + (v_ - v_0)**2 - sin(Theta_fn)**2
-
-        M_U = np.zeros((len(r_p_vect), len(r_q_vect)))
-        F_2 = []
+        F_U = []
 
         for p in range(0, len(r_p_vect)):
             for q in range(0, len(r_q_vect)): 
-                if E_U[p, q] > 0:
-                    M_U[p, q] = SLL
-                else:
-                    M_U[p, q] = 0
+                if E_U[p, q] > 0 and values[p, q] > SLL:
+                        F_U.append((values[p, q] - SLL)**2)
 
-                if values[p, q] > M_U[p, q]:
-                    F_2.append((values[p, q] - M_U[p, q])**2)
+        F_U_sum = sum(F_U) / len(F_U)**2
 
-        F_2_sum = sum(F_2) / len(F_2)**2
-
-        F_obj = F_1_sum + F_2_sum
+        F_obj = F_L_sum + F_U_sum
 
         # Calculate the fitness function 
         fitness = F_obj
