@@ -3,7 +3,7 @@ import pandas as pd
 import time
 from numpy import sin, cos, max, pi, exp, sqrt, abs, nanmax
 from matplotlib import pyplot as plt
-from tqdm import tqdm
+
 
 
 # test final plot
@@ -176,8 +176,8 @@ u, v = 2 * pi * r_p_vect / (N_x * dx * k), \
 u_, v_ = np.meshgrid(u,v)
 
         
-for p in tqdm(range(0, len(r_p_vect)), desc="E Loop"):
-    for q in tqdm(range(0, len(r_q_vect)), desc=" ", leave=False): 
+for p in range(0, len(r_p_vect)):
+    for q in range(0, len(r_q_vect)): 
         
         s[p, q] = 1 - u_[p, q]**2 - v_[p, q]**2
 
