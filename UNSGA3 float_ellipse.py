@@ -51,9 +51,9 @@ d2 = 100
 theta_r = np.radians(20)
 phi_r = np.radians(0)
 
-Theta_hp = np.radians(10)
-Theta_fn = np.radians(13)
-SLL = -25
+Theta_hp = np.radians(6)
+Theta_fn = np.radians(8)
+SLL = -30
 
 
 def power_radiation_pattern_t(theta, phi):
