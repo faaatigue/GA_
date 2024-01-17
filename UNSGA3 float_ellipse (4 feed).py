@@ -1,3 +1,4 @@
+import os
 import time
 import copy
 import numpy as np
@@ -244,6 +245,10 @@ class BinaryMatrixProblem(ElementwiseProblem):
         values = 20 * np.log10(E) 
         # values = abs(E)
 
+        for p in range(0, len(r_p_vect)):
+            for q in range(0, len(r_q_vect)): 
+                if values[p, q] < -100:
+                    values[p, q] = nan
 
         # Calculate objective function
         # First objective function and Lower mask (HPBW)
@@ -299,12 +304,15 @@ problem = BinaryMatrixProblem(n_rows, n_cols, elementwise_runner=runner)
 sampling = LHS()
 crossover = BinomialCrossover(prob=0.9)  
 mutation = GaussianMutation(prob=0.1)
+pop_size = 1000
+ref_dirs = get_reference_directions("energy", 1, 1000)
+termination = ("n_gen", 400)
 
 
 # Configure the algorithm
 algorithm = UNSGA3(
-    pop_size=1000,  # Population size
-    ref_dirs=get_reference_directions("energy", 1, 1000),  # Number of reference directions
+    pop_size=pop_size,  # Population size
+    ref_dirs=ref_dirs,  # Number of reference directions
     # selecttion=selecttion,
     sampling=sampling,
     crossover=crossover,
@@ -318,7 +326,7 @@ algorithm = UNSGA3(
 res = minimize(
     problem,
     algorithm,
-    termination=("n_gen", 400),
+    termination=termination,
     seed=1,
     save_history=True,
     verbose=True,
@@ -326,14 +334,16 @@ res = minimize(
     # pop_initializer=pop_custom,
 )
 
-print('Threads:', res.exec_time)
+
+# print('Threads:', res.exec_time)
 
 pool.close()
 
+
 # Output the best fitness value for each generation
 best_fitness_each_gen = [gen.opt.get("F") for gen in res.history]
-for gen_num, fitness in enumerate(best_fitness_each_gen):
-    print(f"Generation {gen_num + 1}: {fitness}")
+# for gen_num, fitness in enumerate(best_fitness_each_gen):
+#     print(f"Generation {gen_num + 1}: {fitness}")
 
 # Plot the best fitness values
 best_fitness_each_gen = np.array(best_fitness_each_gen)
@@ -343,11 +353,12 @@ plt.xlabel('Generation')
 plt.ylabel('Best Fitness Value')
 plt.title('Evolution of Best Fitness Value over Generations')
 plt.grid(True)
+plt.savefig('out1/0-Evolution of Fitness.png', dpi=300)
 plt.show()
 
 # Output optimization results
 best_fitness = res.F
-print("Best Fitness:", best_fitness)
+# print("Best Fitness:", best_fitness)
 
 best_solution = res.X.astype(float)
 for i, value in enumerate(best_solution):
@@ -356,7 +367,7 @@ for i, value in enumerate(best_solution):
     else:
         best_solution[i] = pi
 best_matrix = best_solution.reshape((n_rows, n_cols))
-print("Best Solution (Flattened Binary Matrix):", best_matrix)
+# print("Best Solution (Flattened Binary Matrix):", best_matrix)
 
 
 
@@ -370,7 +381,7 @@ execution_time = end_time - start_time
 hours, rem = divmod(execution_time, 3600)
 minutes, seconds = divmod(rem, 60)
 
-print(f"Script execution time: {int(hours)}h {int(minutes)}min {int(seconds)}s")
+# print(f"Script execution time: {int(hours)}h {int(minutes)}min {int(seconds)}s")
 
 
 
@@ -386,6 +397,7 @@ plt.axis('equal')
 plt.xticks(range(0, M, 2))
 plt.yticks(range(0, N, 2))
 plt.colorbar()
+plt.savefig('out1/1-Phase matrix.png', dpi=300)
 plt.show()
 
 # Recalculate radiation pattern
@@ -495,6 +507,7 @@ plt.axis('off')
 plt.title('Normalized radiation patterns')
 
 # Display the plot
+plt.savefig('out1/2-Radiation patterns.png', dpi=300)
 plt.show()
 
 
@@ -509,6 +522,7 @@ plt.axis('equal')
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Over -3dB Area')
+plt.savefig('out1/3-3dB Area.png', dpi=300)
 plt.show()
 
 
@@ -532,6 +546,7 @@ plt.axis('equal')
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Display the masks on the radiation patterns')
+plt.savefig('out1/4-Masks.png', dpi=300)
 plt.show()
 
 
@@ -548,17 +563,8 @@ plt.axis('equal')
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Check SLL Area')
+plt.savefig('out1/5-Check SLL.png', dpi=300)
 plt.show()
-
-
-# # Plot 2d Radiation Pattern
-# x_asix = np.linspace(-85, 85, N_x)
-# plt.figure()
-# plt.plot(x_asix, values[:, 100], marker='o', linestyle='-', color='b')
-
-# plt.title('2D Radiation Pattern')
-# plt.grid(True)
-# plt.show()
 
 
 # Prepare the data to calculate the directity
@@ -571,17 +577,51 @@ E_int = trapz(E_2, u)
 E_int = trapz(E_int, v)
 # print('int',E_int)
 E_0 = E[np.where(values==0)]
-print("Max value position: ", np.argwhere(values==0))
+# print("Max value position: ", np.argwhere(values==0))
 D_0 = abs(4*pi*E_0**2 / E_int)
-print("Directity: ", 10*np.log10(D_0))
-print("SLL: ", nanmax(values4))
+# print("Directity: ", 10*np.log10(D_0))
+# print("SLL: ", nanmax(values4))
 
 
 # Create a DataFrame
 df = pd.DataFrame(values, index=u, columns=v)
 
 # File path
-csv_file_path = 'UNSGA3 float_ellipse (4 feed).csv'
+csv_file_path = 'out1/UNSGA3 float_ellipse (4 feed).csv'
 
 # Write the DataFrame to a CSV file (including the index)
 df.to_csv(csv_file_path, index=True, header=True)
+
+
+# Output to txt
+with open("out1/out.txt", "w") as f:
+    for gen_num, fitness in enumerate(best_fitness_each_gen):
+        f.write(f"Generation {gen_num + 1}: {fitness}\n")
+    f.write(os.linesep * 2)
+    f.write(f"theta_r: {theta_r}\n")
+    f.write(f"phi_r: {phi_r}\n")
+    f.write(os.linesep)
+    f.write(f"Theta_hp: {Theta_hp}\n")
+    f.write(f"Theta_fn: {Theta_fn}\n")
+    f.write(f"SLL: {SLL}\n")
+    f.write(os.linesep * 2)
+    f.write(f"sampling: {sampling}\n")
+    f.write(f"crossover: {crossover}\n")
+    f.write(f"mutation: {mutation}\n")
+    f.write(os.linesep)
+    f.write(f"pop_size: {pop_size}\n")
+    f.write(f"ref_dirs: {ref_dirs}\n")
+    f.write(f"termination: {termination}\n")
+    f.write(os.linesep * 2)
+    f.write(f"Best Fitness: {best_fitness}\n")
+    f.write(f"Best Solution (Flattened Binary Matrix): {best_matrix}\n")
+    f.write(f"Script execution time: {int(hours)}h {int(minutes)}min {int(seconds)}s\n")
+    f.write(os.linesep * 2)
+    f.write("Max value position: {}\n".format(np.argwhere(values == 0)))
+    f.write("Directity: {}\n".format(10 * np.log10(D_0)))
+    f.write("SLL: {}\n".format(nanmax(values4)))
+
+with open("out1/out.txt", "r") as f:
+    data = f.read()
+
+print(data)
