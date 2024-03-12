@@ -1,3 +1,4 @@
+import os
 import time
 import copy
 import numpy as np
@@ -48,12 +49,13 @@ theta_t = pi
 phi_t = 0 
 # The distance between the receiver and the center of the RIS
 d2 = 100  
-theta_r = np.radians(0)
-phi_r = np.radians(0)
+theta_r = np.radians(40)
+phi_r = np.radians(200)
 
-Theta_hp = np.radians(10)
-Theta_fn = np.radians(13)
-SLL = -25
+Theta_hp = np.radians(20)
+Theta_fn = np.radians(25)
+SLL = -15
+
 
 
 def power_radiation_pattern_t(theta, phi):
@@ -87,17 +89,17 @@ for n in range(0, N):
         x_u[n, m] = (m - ((M / 2) - 1 ) - 0.5) * dx
         y_u[n, m] = (n - ((N / 2) - 1 ) - 0.5) * dy
 
-        # Compute the parameters along the coordinate axes
-        # The distance between the transmitter and the unit cell
-        r_t[n, m] = np.sqrt((x_t - x_u[n, m]) ** 2 + (y_t - y_u[n, m]) ** 2 + z_t ** 2)  
-        # The distance between the receiver and the unit cell
-        r_r[n, m] = np.sqrt((x_r - x_u[n, m]) ** 2 + (y_r - y_u[n, m]) ** 2 + z_r ** 2)
-        
-        # The elevation angle from the unit cell to the transmitter
-        theta_t_nm[n, m] = np.arccos(abs(z_t / r_t[n, m]))   
-        theta_tx_nm[n, m] = np.arctan((np.sqrt(((z_t ** 2) * (y_u[n, m] ** 2)) + ((z_t ** 2) * (x_u[n, m] ** 2))) + \
-                                                (y_u[n, m] * (x_t - x_u[n, m]) - x_u[n, m] * (y_t - y_u[n, m])) ** 2) / \
-                                                (r_t[n, m] ** 2 - ((x_u[n, m] * x_t) + (y_u[n, m] * y_t))))
+# Compute the parameters along the coordinate axes
+# The distance between the transmitter and the unit cell
+r_t = np.sqrt((x_t - x_u) ** 2 + (y_t - y_u) ** 2 + z_t ** 2)  
+# The distance between the receiver and the unit cell
+r_r = np.sqrt((x_r - x_u) ** 2 + (y_r - y_u) ** 2 + z_r ** 2)
+
+# The elevation angle from the unit cell to the transmitter
+theta_t_nm = np.arccos(abs(z_t / r_t))   
+# theta_tx_nm = np.arctan((np.sqrt(((z_t ** 2) * (y_u ** 2)) + ((z_t ** 2) * (x_u ** 2))) + \
+#                                         (y_u * (x_t - x_u) - x_u * (y_t - y_u)) ** 2) / \
+#                                         (r_t ** 2 - ((x_u * x_t) + (y_u * y_t))))
 
 
 # Calculate radiation pattern
@@ -126,7 +128,6 @@ s = 1 - u_**2 - v_**2
 
 # The parameters settings for objective function
 u_0, v_0 = sin(theta_r) * cos(phi_r), sin(theta_r) * sin(phi_r)
-
 
 # Lower mask (HPBW)
 E_L = (u_ - u_0)**2 + (v_ - v_0)**2 - sin(Theta_hp / 2)**2
@@ -197,11 +198,10 @@ class BinaryMatrixProblem(ElementwiseProblem):
         values = 20 * np.log10(E) 
         # values = abs(E)
 
-        for p in range(0, len(r_p_vect)):
-            for q in range(0, len(r_q_vect)): 
-                if values[p, q] < -100:
-                    values[p, q] = nan
-                    
+
+        values[np.where(values< -100)] = nan
+
+
         # Calculate objective function
         # First objective function and Lower mask (HPBW)
         F_L = []
@@ -223,7 +223,7 @@ class BinaryMatrixProblem(ElementwiseProblem):
         for p in range(0, len(r_p_vect)):
             for q in range(0, len(r_q_vect)): 
                 if E_U[p, q] > 0 and values[p, q] > SLL and s[p, q] >= 0:
-                    F_U.append((values[p, q] - SLL)**2)                      
+                    F_U.append((values[p, q] - SLL)**2)                 
 
         if len(F_U) == 0:
             F_U.append(0)
@@ -231,18 +231,13 @@ class BinaryMatrixProblem(ElementwiseProblem):
         F_U_sum = sum(F_U) / len(F_U)**2
 
         F_obj = F_L_sum + F_U_sum
-        # F_obj = 2*F_L_sum + F_U_sum
 
-
-        # Calculate the constraint
-        # F_C = len(np.argwhere((E_C<=0) & (values==0)))
 
         # Calculate the fitness function 
         fitness = F_obj
         # print(fitness)
         out["F"] = fitness
         # out["F"] = [F_L_sum, F_U_sum]
-        # out["G"] = 1 - F_C
 
 
 
@@ -257,18 +252,19 @@ runner = StarmapParallelization(pool.starmap)
 # define the problem by passing the starmap interface of the thread pool
 problem = BinaryMatrixProblem(n_rows, n_cols, elementwise_runner=runner)
 
-# selecttion = TournamentSelection()  
+
 sampling = LHS()
-# sampling = BinaryRandomSampling()
 crossover = BinomialCrossover(prob=0.9)  
 mutation = GaussianMutation(prob=0.1)
-# crossover=TwoPointCrossover()
-# mutation=BitflipMutation()
+pop_size = 1000
+ref_dirs = get_reference_directions("energy", 1, 1000)
+termination = ("n_gen", 400)
+
 
 # Configure the algorithm
 algorithm = UNSGA3(
-    pop_size=1000,  # Population size
-    ref_dirs=get_reference_directions("energy", 1, 1000),  # Number of reference directions
+    pop_size=pop_size,  # Population size
+    ref_dirs=ref_dirs,  # Number of reference directions
     # selecttion=selecttion,
     sampling=sampling,
     crossover=crossover,
@@ -282,7 +278,7 @@ algorithm = UNSGA3(
 res = minimize(
     problem,
     algorithm,
-    termination=("n_gen", 400),
+    termination=termination,
     seed=1,
     save_history=True,
     verbose=True,
@@ -291,15 +287,15 @@ res = minimize(
 )
 
 
-print('Threads:', res.exec_time)
+# print('Threads:', res.exec_time)
 
 pool.close()
 
 
 # Output the best fitness value for each generation
 best_fitness_each_gen = [gen.opt.get("F") for gen in res.history]
-for gen_num, fitness in enumerate(best_fitness_each_gen):
-    print(f"Generation {gen_num + 1}: {fitness}")
+# for gen_num, fitness in enumerate(best_fitness_each_gen):
+#     print(f"Generation {gen_num + 1}: {fitness}")
 
 # Plot the best fitness values
 best_fitness_each_gen = np.array(best_fitness_each_gen)
@@ -309,11 +305,12 @@ plt.xlabel('Generation')
 plt.ylabel('Best Fitness Value')
 plt.title('Evolution of Best Fitness Value over Generations')
 plt.grid(True)
+plt.savefig('1_0-Evolution of Fitness.png', dpi=300)
 plt.show()
 
 # Output optimization results
 best_fitness = res.F
-print("Best Fitness:", best_fitness)
+# print("Best Fitness:", best_fitness)
 
 best_solution = res.X.astype(float)
 for i, value in enumerate(best_solution):
@@ -322,7 +319,7 @@ for i, value in enumerate(best_solution):
     else:
         best_solution[i] = pi
 best_matrix = best_solution.reshape((n_rows, n_cols))
-print("Best Solution (Flattened Binary Matrix):", best_matrix)
+# print("Best Solution (Flattened Binary Matrix):", best_matrix)
 
 
 
@@ -336,7 +333,7 @@ execution_time = end_time - start_time
 hours, rem = divmod(execution_time, 3600)
 minutes, seconds = divmod(rem, 60)
 
-print(f"Script execution time: {int(hours)}h {int(minutes)}min {int(seconds)}s")
+# print(f"Script execution time: {int(hours)}h {int(minutes)}min {int(seconds)}s")
 
 
 
@@ -352,6 +349,7 @@ plt.axis('equal')
 plt.xticks(range(0, M, 2))
 plt.yticks(range(0, N, 2))
 plt.colorbar()
+plt.savefig('1_1-Phase matrix.png', dpi=300)
 plt.show()
 
 # Recalculate radiation pattern
@@ -364,6 +362,7 @@ for n in range(0, N):
 bla = (power_radiation_pattern_t(theta_t_nm, 0) * \
             power_radiation_pattern_cell(theta_t_nm, 0) / rmn_rf) * \
             Gamma*  exp(-1j * k * rmn_rf) 
+
 
 N_x = N*100
 N_y = M*100
@@ -435,6 +434,7 @@ plt.axis('off')
 plt.title('Normalized radiation patterns')
 
 # Display the plot
+plt.savefig('1_2-Radiation patterns.png', dpi=300)
 plt.show()
 
 
@@ -449,6 +449,21 @@ plt.axis('equal')
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Over -3dB Area')
+plt.savefig('1_3-3dB Area.png', dpi=300)
+plt.show()
+
+
+# Plot Area over -3dB (only)
+values5 = copy.deepcopy(values1)
+
+values5[np.where(values5 < -3)] = nan
+
+plt.imshow(values5, cmap='jet', origin='lower')
+plt.axis('equal') 
+plt.colorbar(label='')
+plt.axis('off')
+plt.title('Over -3dB Area')
+plt.savefig('1_6-3dB Area (only).png', dpi=300)
 plt.show()
 
 
@@ -459,14 +474,15 @@ E_U = (u_ - u_0)**2 + (v_ - v_0)**2 - sin(Theta_fn / 2)**2
 values3 = copy.deepcopy(values1)
 values3[np.where(np.isclose(values3, 0, atol=1e-2))] = -20
 values3[np.where((values3 >= -3) & (values3 < 0))] = -1.5
-values3[np.where(np.isclose(E_L, 0, atol=1e-4))] = -12.5
-values3[np.where(np.isclose(E_U, 0, atol=1e-3))] = 0
+values3[np.where(np.isclose(E_L, 0, atol=1e-2, rtol=1e-2))] = -12.5
+values3[np.where(np.isclose(E_U, 0, atol=1e-2, rtol=1e-2))] = 0
 
 plt.imshow(values3, cmap='jet', origin='lower')
 plt.axis('equal') 
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Display the masks on the radiation patterns')
+plt.savefig('1_4-Masks.png', dpi=300)
 plt.show()
 
 
@@ -477,23 +493,15 @@ E_S = (u_ - u_0)**2 + (v_ - v_0)**2 - sin(Theta_s)**2
 values4 = copy.deepcopy(values1)
 
 values4[np.where(E_S<=0)] = nan
+values4[np.where(np.isclose(values4, nanmax(values4), atol=1e-2))] = -20
 
 plt.imshow(values4, cmap='jet', origin='lower')
 plt.axis('equal') 
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Check SLL Area')
+plt.savefig('1_5-Check SLL.png', dpi=300)
 plt.show()
-
-
-# # Plot 2d Radiation Pattern
-# x_asix = np.linspace(-85, 85, N_x)
-# plt.figure()
-# plt.plot(x_asix, values[:, 100], marker='o', linestyle='-', color='b')
-
-# plt.title('2D Radiation Pattern')
-# plt.grid(True)
-# plt.show()
 
 
 # Prepare the data to calculate the directity
@@ -506,17 +514,51 @@ E_int = trapz(E_2, u)
 E_int = trapz(E_int, v)
 # print('int',E_int)
 E_0 = E[np.where(values==0)]
-print("Max value position: ", np.argwhere(values==0))
+# print("Max value position: ", np.argwhere(values==0))
 D_0 = abs(4*pi*E_0**2 / E_int)
-print("Directity: ", 10*np.log10(D_0))
-print("SLL: ", nanmax(values4))
+# print("Directity: ", 10*np.log10(D_0))
+# print("SLL: ", nanmax(values4))
 
 
 # Create a DataFrame
 df = pd.DataFrame(values, index=u, columns=v)
 
 # File path
-csv_file_path = 'UNSGA3 float_circle.csv'
+csv_file_path = '1_UNSGA3 float_circle.csv'
 
 # Write the DataFrame to a CSV file (including the index)
 df.to_csv(csv_file_path, index=True, header=True)
+
+
+# Output to txt
+with open("1_out.txt", "w") as f:
+    for gen_num, fitness in enumerate(best_fitness_each_gen):
+        f.write(f"Generation {gen_num + 1}: {fitness}\n")
+    f.write(os.linesep * 2)
+    f.write(f"theta_r: {theta_r}\n")
+    f.write(f"phi_r: {phi_r}\n")
+    f.write(os.linesep)
+    f.write(f"Theta_hp: {Theta_hp}\n")
+    f.write(f"Theta_fn: {Theta_fn}\n")
+    f.write(f"SLL: {SLL}\n")
+    f.write(os.linesep * 2)
+    f.write(f"sampling: {sampling}\n")
+    f.write(f"crossover: {crossover}\n")
+    f.write(f"mutation: {mutation}\n")
+    f.write(os.linesep)
+    f.write(f"pop_size: {pop_size}\n")
+    f.write(f"ref_dirs: {ref_dirs}\n")
+    f.write(f"termination: {termination}\n")
+    f.write(os.linesep * 2)
+    f.write(f"Best Fitness: {best_fitness}\n")
+    f.write(f"Best Solution (Flattened Binary Matrix): {best_matrix}\n")
+    f.write(f"Script execution time: {int(hours)}h {int(minutes)}min {int(seconds)}s\n")
+    f.write(os.linesep * 2)
+    f.write("Max value position: {}\n".format(np.argwhere(values == 0)))
+    f.write("Directity: {}\n".format(10 * np.log10(D_0)))
+    f.write("SLL: {}\n".format(nanmax(values4)))
+
+with open("1_out.txt", "r") as f:
+    data = f.read()
+
+print(data)
