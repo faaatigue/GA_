@@ -309,7 +309,7 @@ plt.xlabel('Generation')
 plt.ylabel('Best Fitness Value')
 plt.title('Evolution of Best Fitness Value over Generations')
 plt.grid(True)
-plt.savefig('out4/0-Evolution of Fitness.png', dpi=300)
+plt.savefig('2_0-Evolution of Fitness.png', dpi=300)
 plt.show()
 
 # Output optimization results
@@ -357,7 +357,7 @@ plt.axis('equal')
 plt.xticks(range(0, M, 2))
 plt.yticks(range(0, N, 2))
 plt.colorbar()
-plt.savefig('out4/1-Phase matrix.png', dpi=300)
+plt.savefig('2_1-Phase matrix.png', dpi=300)
 plt.show()
 
 # Recalculate radiation pattern
@@ -442,7 +442,7 @@ plt.axis('off')
 plt.title('Normalized radiation patterns')
 
 # Display the plot
-plt.savefig('out4/2-Radiation patterns.png', dpi=300)
+plt.savefig('2_2-Radiation patterns.png', dpi=300)
 plt.show()
 
 
@@ -457,7 +457,7 @@ plt.axis('equal')
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Over -3dB Area')
-plt.savefig('out4/3-3dB Area.png', dpi=300)
+plt.savefig('2_3-3dB Area.png', dpi=300)
 plt.show()
 
 
@@ -471,7 +471,7 @@ plt.axis('equal')
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Over -3dB Area')
-plt.savefig('out4/6-3dB Area (only).png', dpi=300)
+plt.savefig('2_6-3dB Area (only).png', dpi=300)
 plt.show()
 
 
@@ -490,7 +490,7 @@ plt.axis('equal')
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Display the masks on the radiation patterns')
-plt.savefig('out4/4-Masks.png', dpi=300)
+plt.savefig('2_4-Masks.png', dpi=300)
 plt.show()
 
 
@@ -508,7 +508,7 @@ plt.axis('equal')
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Check SLL Area')
-plt.savefig('out4/5-Check SLL.png', dpi=300)
+plt.savefig('2_5-Check SLL.png', dpi=300)
 plt.show()
 
 
@@ -532,14 +532,14 @@ D_0 = abs(4*pi*E_0**2 / E_int)
 df = pd.DataFrame(values, index=u, columns=v)
 
 # File path
-csv_file_path = 'out4/UNSGA3 float_circle_2-bit.csv'
+csv_file_path = '2_UNSGA3 float_circle_2-bit.csv'
 
 # Write the DataFrame to a CSV file (including the index)
 df.to_csv(csv_file_path, index=True, header=True)
 
 
 # Output to txt
-with open("out4/out.txt", "w") as f:
+with open("2_out.txt", "w") as f:
     for gen_num, fitness in enumerate(best_fitness_each_gen):
         f.write(f"Generation {gen_num + 1}: {fitness}\n")
     f.write(os.linesep * 2)
@@ -566,7 +566,7 @@ with open("out4/out.txt", "w") as f:
     f.write("Directity: {}\n".format(10 * np.log10(D_0)))
     f.write("SLL: {}\n".format(nanmax(values4)))
 
-with open("out4/out.txt", "r") as f:
+with open("2_out.txt", "r") as f:
     data = f.read()
 
 print(data)
