@@ -50,10 +50,10 @@ phi_t = 0
 # The distance between the receiver and the center of the RIS
 d2 = 100  
 theta_r = np.radians(40)
-phi_r = np.radians(215)
+phi_r = np.radians(200)
 
 theta_r2 = np.radians(20)
-phi_r2 = np.radians(35)
+phi_r2 = np.radians(20)
 
 Theta_hp = np.radians(10)
 Theta_fn = np.radians(13)
@@ -137,12 +137,12 @@ u_0, v_0 = sin(theta_r) * cos(phi_r), sin(theta_r) * sin(phi_r)
 u_2, v_2 = sin(theta_r2) * cos(phi_r2), sin(theta_r2) * sin(phi_r2)
 
 # Lower mask (HPBW)
-E_L = (u_ - u_0)**2 + (v_ - v_0)**2 - sin(Theta_hp / 2)**2  \
-    + (u_ - u_2)**2 + (v_ - v_2)**2 - sin(Theta_hp / 2)**2
+E_L = (u_ - u_0)**2 + (v_ - v_0)**2 - sin(Theta_hp / 2)**2  
+E_L2 = (u_ - u_2)**2 + (v_ - v_2)**2 - sin(Theta_hp / 2)**2
 
 # Upper mask (SLL)
-E_U = (u_ - u_0)**2 + (v_ - v_0)**2 - sin(Theta_fn / 2)**2  \
-    + (u_ - u_2)**2 + (v_ - v_2)**2 - sin(Theta_fn / 2)**2
+E_U = (u_ - u_0)**2 + (v_ - v_0)**2 - sin(Theta_fn / 2)**2  
+E_U2 = (u_ - u_2)**2 + (v_ - v_2)**2 - sin(Theta_fn / 2)**2
 
 
 class BinaryMatrixProblem(ElementwiseProblem):
@@ -212,7 +212,7 @@ class BinaryMatrixProblem(ElementwiseProblem):
         # values = abs(E)
 
 
-        values[np.where(values< -100)] = nan
+        values[np.nonzero(values< -100)] = nan
 
 
         # Calculate objective function
@@ -221,7 +221,7 @@ class BinaryMatrixProblem(ElementwiseProblem):
 
         for p in range(0, len(r_p_vect)):
             for q in range(0, len(r_q_vect)): 
-                if E_L[p, q] <= 0 and values[p, q] < -3 and s[p, q] >= 0:
+                if (E_L[p, q] <= 0 and values[p, q] < -3 and s[p, q] >= 0) or (E_L2[p, q] <= 0 and values[p, q] < -3 and s[p, q] >= 0):
                     F_L.append((values[p, q] - (-3))**2)
 
         if len(F_L) == 0:
@@ -235,7 +235,7 @@ class BinaryMatrixProblem(ElementwiseProblem):
 
         for p in range(0, len(r_p_vect)):
             for q in range(0, len(r_q_vect)): 
-                if E_U[p, q] > 0 and values[p, q] > SLL and s[p, q] >= 0:
+                if (E_U[p, q] > 0 and values[p, q] > SLL and s[p, q] >= 0) or (E_U2[p, q] > 0 and values[p, q] > SLL and s[p, q] >= 0):
                     F_U.append((values[p, q] - SLL)**2)                 
 
         if len(F_U) == 0:
@@ -458,70 +458,71 @@ plt.show()
 # Plot Area over -3dB
 values2 = copy.deepcopy(values1)
 
-values2[np.where(np.isclose(values2, 0, atol=1e-1))] = 0
-values2[np.where((values2 >= -3) & (values2 < 0))] = -1.5
+values2[np.nonzero(np.isclose(values2, 0, atol=1e-2))] = 0
+values2[np.nonzero((values2 >= -3) & (values2 < 0))] = -1.5
 
 plt.imshow(values2, cmap='jet', origin='lower')
 plt.axis('equal') 
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Over -3dB Area')
-plt.savefig('4_3-3dB Area.png', dpi=300)
+# plt.savefig('4_3-3dB Area.png', dpi=300)
 plt.show()
 
 
 # Plot Area over -3dB (only)
 values5 = copy.deepcopy(values1)
 
-values5[np.where(values5 < -3)] = nan
+values5[np.nonzero(values5 < -3)] = nan
 
 plt.imshow(values5, cmap='jet', origin='lower')
 plt.axis('equal') 
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Over -3dB Area')
-plt.savefig('4_6-3dB Area (only).png', dpi=300)
+# plt.savefig('4_6-3dB Area (only).png', dpi=300)
 plt.show()
 
 
 # Display the masks 
-E_L = (u_ - u_0)**2 + (v_ - v_0)**2 - sin(Theta_hp / 2)**2  \
-    + (u_ - u_2)**2 + (v_ - v_2)**2 - sin(Theta_hp / 2)**2
+E_L = (u_ - u_0)**2 + (v_ - v_0)**2 - sin(Theta_hp / 2)**2  
+E_L2 = (u_ - u_2)**2 + (v_ - v_2)**2 - sin(Theta_hp / 2)**2
 
-E_U = (u_ - u_0)**2 + (v_ - v_0)**2 - sin(Theta_fn / 2)**2  \
-    + (u_ - u_2)**2 + (v_ - v_2)**2 - sin(Theta_fn / 2)**2
+E_U = (u_ - u_0)**2 + (v_ - v_0)**2 - sin(Theta_fn / 2)**2  
+E_U2 = (u_ - u_2)**2 + (v_ - v_2)**2 - sin(Theta_fn / 2)**2
 
 
 values3 = copy.deepcopy(values1)
-values3[np.where(np.isclose(values3, 0, atol=1e-2))] = -20
-values3[np.where((values3 >= -3) & (values3 < 0))] = -1.5
-values3[np.where(np.isclose(E_L, 0, atol=1e-2, rtol=1e-2))] = -12.5
-values3[np.where(np.isclose(E_U, 0, atol=1e-2, rtol=1e-2))] = 0
+values3[np.nonzero(np.isclose(values3, 0, atol=1e-2))] = -20
+values3[np.nonzero((values3 >= -3) & (values3 < 0))] = -1.5
+values3[np.nonzero((np.isclose(E_L, 0, atol=1e-3))|(np.isclose(E_L2, 0, atol=1e-3)))] = -12.5
+values3[np.nonzero((np.isclose(E_U, 0, atol=1e-3))|(np.isclose(E_U2, 0, atol=1e-3)))] = 0
 
 plt.imshow(values3, cmap='jet', origin='lower')
 plt.axis('equal') 
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Display the masks on the radiation patterns')
-plt.savefig('4_4-Masks.png', dpi=300)
+# plt.savefig('4_4-Masks.png', dpi=300)
 plt.show()
 
 
 # SLL
 Theta_s = Theta_fn / 2 + np.radians(6)
 E_S = (u_ - u_0)**2 + (v_ - v_0)**2 - sin(Theta_s)**2
+E_S2 = (u_ - u_2)**2 + (v_ - v_2)**2 - sin(Theta_s)**2
 
 values4 = copy.deepcopy(values1)
 
-values4[np.where(E_S<=0)] = nan
-values4[np.where(np.isclose(values4, nanmax(values4), atol=1e-2))] = -20
+values4[np.nonzero((E_S<=0)|(E_S2<=0))] = nan
+values4[np.nonzero(np.isclose(values4, nanmax(values4), atol=1e-2))] = -20
 
 plt.imshow(values4, cmap='jet', origin='lower')
 plt.axis('equal') 
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Check SLL Area')
-plt.savefig('4_5-Check SLL.png', dpi=300)
+# plt.savefig('4_5-Check SLL.png', dpi=300)
 plt.show()
 
 
@@ -534,7 +535,7 @@ E_2[np.isnan(E_2)] = 0
 E_int = trapz(E_2, u)
 E_int = trapz(E_int, v)
 # print('int',E_int)
-E_0 = E[np.where(values==0)]
+E_0 = E[np.nonzero(values==0)]
 # print("Max value position: ", np.argwhere(values==0))
 D_0 = abs(4*pi*E_0**2 / E_int)
 # print("Directity: ", 10*np.log10(D_0))
@@ -545,7 +546,7 @@ D_0 = abs(4*pi*E_0**2 / E_int)
 df = pd.DataFrame(values, index=u, columns=v)
 
 # File path
-csv_file_path = '4_UNSGA3 float_circle (2 beams).csv'
+csv_file_path = '4_UNSGA3 float_circle_2-bit (2 beams).csv'
 
 # Write the DataFrame to a CSV file (including the index)
 df.to_csv(csv_file_path, index=True, header=True)
