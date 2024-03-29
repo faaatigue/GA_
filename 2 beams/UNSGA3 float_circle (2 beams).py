@@ -122,7 +122,11 @@ r_q_vect = np.arange(q_inf, q_sup + 1, 1)
 
 rmn_rf = np.sqrt(x_u ** 2 + y_u ** 2 + d1 ** 2) 
 # rmn_rf = sqrt(((m + 1) * dx) ** 2 + ((n + 1) * dy) ** 2 + d1 ** 2)    
-            
+
+
+bla_2 = sqrt(power_radiation_pattern_t(theta_t_nm, 0) * power_radiation_pattern_cell(theta_t_nm, 0))   \
+        * exp(-1j * k * rmn_rf) / rmn_rf       
+
 
 u, v = 2 * pi * r_p_vect / (N_x * dx * k), \
        2 * pi * r_q_vect / (N_y * dy * k)
@@ -179,9 +183,7 @@ class BinaryMatrixProblem(ElementwiseProblem):
             for m in range(0, M):
                 Gamma[n, m] = A * exp(1j * matrix[n, m])
         
-        bla = (power_radiation_pattern_t(theta_t_nm, 0) * \
-                 power_radiation_pattern_cell(theta_t_nm, 0) / rmn_rf) * \
-                 Gamma*  exp(-1j * k * rmn_rf) 
+        bla = Gamma * bla_2
 
         matrice = np.fft.ifft2(bla, (N_x, N_y))
         matrice = np.fft.fftshift(matrice)
@@ -314,7 +316,7 @@ plt.xlabel('Generation')
 plt.ylabel('Best Fitness Value')
 plt.title('Evolution of Best Fitness Value over Generations')
 plt.grid(True)
-plt.savefig('3_0-Evolution of Fitness.png', dpi=300)
+plt.savefig('out6_0-Evolution of Fitness.png', dpi=300)
 plt.show()
 
 # Output optimization results
@@ -358,7 +360,7 @@ plt.axis('equal')
 plt.xticks(range(0, M, 2))
 plt.yticks(range(0, N, 2))
 plt.colorbar()
-plt.savefig('3_1-Phase matrix.png', dpi=300)
+plt.savefig('out6_1-Phase matrix.png', dpi=300)
 plt.show()
 
 # Recalculate radiation pattern
@@ -368,9 +370,10 @@ for n in range(0, N):
     for m in range(0, M):
         Gamma[n, m] = A * exp(1j * phi_Gamma[n, m])
 
-bla = (power_radiation_pattern_t(theta_t_nm, 0) * \
-            power_radiation_pattern_cell(theta_t_nm, 0) / rmn_rf) * \
-            Gamma*  exp(-1j * k * rmn_rf) 
+bla_2 = sqrt(power_radiation_pattern_t(theta_t_nm, 0) * power_radiation_pattern_cell(theta_t_nm, 0))   \
+        * exp(-1j * k * rmn_rf) / rmn_rf   
+
+bla = Gamma * bla_2
 
 
 N_x = N*100
@@ -443,7 +446,7 @@ plt.axis('off')
 plt.title('Normalized radiation patterns')
 
 # Display the plot
-plt.savefig('3_2-Radiation patterns.png', dpi=300)
+plt.savefig('out6_2-Radiation patterns.png', dpi=300)
 plt.show()
 
 
@@ -458,7 +461,7 @@ plt.axis('equal')
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Over -3dB Area')
-# plt.savefig('3_3-3dB Area.png', dpi=300)
+# plt.savefig('out6_3-3dB Area.png', dpi=300)
 plt.show()
 
 
@@ -472,7 +475,7 @@ plt.axis('equal')
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Over -3dB Area')
-# plt.savefig('3_6-3dB Area (only).png', dpi=300)
+# plt.savefig('out6_6-3dB Area (only).png', dpi=300)
 plt.show()
 
 
@@ -495,7 +498,7 @@ plt.axis('equal')
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Display the masks on the radiation patterns')
-# plt.savefig('3_4-Masks.png', dpi=300)
+# plt.savefig('out6_4-Masks.png', dpi=300)
 plt.show()
 
 
@@ -514,7 +517,7 @@ plt.axis('equal')
 plt.colorbar(label='')
 plt.axis('off')
 plt.title('Check SLL Area')
-# plt.savefig('3_5-Check SLL.png', dpi=300)
+# plt.savefig('out6_5-Check SLL.png', dpi=300)
 plt.show()
 
 
@@ -538,14 +541,14 @@ D_0 = abs(4*pi*E_0**2 / E_int)
 df = pd.DataFrame(values, index=u, columns=v)
 
 # File path
-csv_file_path = '3_UNSGA3 float_circle (2 beams).csv'
+csv_file_path = 'out6_UNSGA3 float_circle (2 beams).csv'
 
 # Write the DataFrame to a CSV file (including the index)
 df.to_csv(csv_file_path, index=True, header=True)
 
 
 # Output to txt
-with open("3_out.txt", "w") as f:
+with open("out6_out.txt", "w") as f:
     for gen_num, fitness in enumerate(best_fitness_each_gen):
         f.write(f"Generation {gen_num + 1}: {fitness}\n")
     f.write(os.linesep * 2)
@@ -574,7 +577,7 @@ with open("3_out.txt", "w") as f:
     f.write("Directity: {}\n".format(10 * np.log10(D_0)))
     f.write("SLL: {}\n".format(nanmax(values4)))
 
-with open("3_out.txt", "r") as f:
+with open("out6_out.txt", "r") as f:
     data = f.read()
 
 print(data)
