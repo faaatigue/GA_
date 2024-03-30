@@ -49,12 +49,12 @@ theta_t = pi
 phi_t = 0 
 # The distance between the receiver and the center of the RIS
 d2 = 100  
-theta_r = np.radians(60)
-phi_r = np.radians(0)
+theta_r = np.radians(40)
+phi_r = np.radians(200)
 
-Theta_hp = np.radians(10)
-Theta_fn = np.radians(13)
-SLL = -25
+Theta_hp = np.radians(20)
+Theta_fn = np.radians(25)
+SLL = -15
 
 
 
