@@ -405,7 +405,7 @@ for p in range(0, len(r_p_vect)):
             u_[p, q], v_[p, q] = nan, nan
 
         else: 
-            E_1[p, q] = sqrt(s[p, q]) * M * N * \
+            E_1[p, q] = sqrt(s[p, q] ** (q_e/2)) * M * N * \
                             matrice[p, q]
             
 
