@@ -58,14 +58,20 @@ SLL = -15
 
 
 
+# Radiation pattern mode
+q_f = 4
+q_e = 1
+
+
 def power_radiation_pattern_t(theta, phi):
-    return cos(theta) ** 4 \
+    return 2*(q_f + 1) * \
+                  cos(theta) ** q_f \
                 * np.logical_and(0 <= theta, theta <= pi / 2)  \
                 *   np.logical_and(0 <= phi, phi < 2 * pi)
 
     
 def power_radiation_pattern_cell(theta, phi):
-    return 4 * pi * dx * dy * cos(theta) / wavelength **2 \
+    return 4 * pi * dx * dy * cos(theta) ** q_e / wavelength **2 \
                 * np.logical_and(0 <= theta, theta <= pi / 2)  \
                 * np.logical_and(0 <= phi, phi < 2 * pi)
 
@@ -193,7 +199,7 @@ class BinaryMatrixProblem(ElementwiseProblem):
                     u_[p, q], v_[p, q] = nan, nan
 
                 else: 
-                    E_1[p, q] = sqrt(s[p, q]) * M * N * \
+                    E_1[p, q] = sqrt(s[p, q] ** (q_e/2)) * M * N * \
                                  matrice[p, q]
                     
         
@@ -406,7 +412,7 @@ for p in range(0, len(r_p_vect)):
             u_[p, q], v_[p, q] = nan, nan
 
         else: 
-            E_1[p, q] = sqrt(s[p, q]) * M * N * \
+            E_1[p, q] = sqrt(s[p, q] ** (q_e/2)) * M * N * \
                             matrice[p, q]
             
 
